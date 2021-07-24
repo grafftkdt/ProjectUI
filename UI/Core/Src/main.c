@@ -43,7 +43,9 @@
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-
+int16_t inputchar = -1;
+char RxDataBuffer[32] = { 0 };
+uint8_t nstation[10] = { 0 };
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -51,7 +53,11 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
-
+int16_t UARTRecieveIT();
+void Communication(int16_t dataIn);
+void ACK1();
+void ACK2();
+void request(uint8_t mode);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -96,6 +102,14 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  HAL_UART_Receive_IT(&huart2,  (uint8_t*)RxDataBuffer, 32);
+	   inputchar = UARTRecieveIT();
+		//if input char == -1 ==> No New data
+		if (inputchar != -1)
+		{
+			Communication(inputchar);
+		}
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -163,10 +177,10 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
-  huart2.Init.WordLength = UART_WORDLENGTH_8B;
+  huart2.Init.BaudRate = 512000;
+  huart2.Init.WordLength = UART_WORDLENGTH_9B;
   huart2.Init.StopBits = UART_STOPBITS_1;
-  huart2.Init.Parity = UART_PARITY_NONE;
+  huart2.Init.Parity = UART_PARITY_EVEN;
   huart2.Init.Mode = UART_MODE_TX_RX;
   huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
   huart2.Init.OverSampling = UART_OVERSAMPLING_16;
@@ -214,7 +228,273 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+int16_t UARTRecieveIT()
+{
+	static uint32_t dataPos =0;
+	int16_t data=-1;
+	if(huart2.RxXferSize - huart2.RxXferCount!=dataPos)
+	{
+		data=RxDataBuffer[dataPos];
+		dataPos= (dataPos+1)%huart2.RxXferSize;
+	}
+	return data;
+}
 
+void Communication(int16_t dataIn)
+{
+	static uint8_t mode = 0;
+	static uint8_t n = 0;
+	static uint16_t parameter = 0;
+	static uint8_t station[10] = {99,99,99,99,99,99,99,99,99,99};
+	static uint16_t checksum = 0;
+	static uint8_t check = 0;
+	static uint8_t len = 0;
+
+	static enum _StateMachine
+	{
+		State_StartMode,
+		State_CollectData_2,
+		State_CollectData_3,
+		State_Len,
+		State_CheckSum
+
+	} STATE = State_StartMode;
+
+	//State Machine
+	  switch (STATE)
+	  {
+	  	  case State_StartMode :
+	  		  switch (dataIn)
+	  		  {
+	  		  	  case 0b10010010 :
+	  		  		  mode = 2;		//connect MCU #1
+	  		  		  STATE = State_CheckSum;
+	  		  		  break;
+
+	  		  	  case 0b10010011 :
+	  		  		  mode = 3;		//disconnect MCU #1
+	  		  		  STATE = State_CheckSum;
+	  		  		  break;
+
+	  		  	  case 0b10011000 :
+	  		  		  mode = 8;		//go to station/goal position #1
+	  		  		  STATE = State_CheckSum;
+	  		  		  break;
+
+	  		  	  case 0b10011001 :
+	  		  		  mode = 9;		//request current station #1
+	  		  		  STATE = State_CheckSum;
+	  		  		  break;
+
+	  		  	  case 0b10011010 :
+	  		  		  mode = 10;	//request angular position #1
+	  		  		  STATE = State_CheckSum;
+	  		  		  break;
+
+	  		  	  case 0b10011011 :
+	  		  		  mode = 11;	//request max angular velocity #1
+	  		  		  STATE = State_CheckSum;
+	  		  		  break;
+
+	  		  	  case 0b10011100 :
+	  		  		  mode = 12;	//enable gripper #1
+	  		  		  STATE = State_CheckSum;
+	  		  		  break;
+
+	  		  	  case 0b10011101 :
+	  		  		  mode = 13;	//disable gripper #1
+	  		  		  STATE = State_CheckSum;
+	  		  		  break;
+
+	  		  	  case 0b10011110 :
+	  		  		  mode = 14;	//set home #1
+	  		  		  STATE = State_CheckSum;
+	  		  		  break;
+
+	  		  	  case 0b10010001 :
+	  		  		  mode = 1;		//test command #2
+	  		  		  n = 1;
+	  		  		  STATE = State_CollectData_2;
+	  		  		  break;
+
+	  		  	  case 0b10010100 :
+	  		  		  mode = 4;		//set angular velocity #2
+	  		  		  n = 1;
+	  		  		  STATE = State_CollectData_2;
+	  		  		  break;
+
+	  		  	  case 0b10010101 :
+	  		  		  mode = 5;		//set angular position #2
+	  		  		  n = 1;
+	  		  		  STATE = State_CollectData_2;
+	  		  		  break;
+
+	  		  	  case 0b10010110 :
+	  		  		  mode = 6;		//set goal 1 station #2
+	  		  		  n = 1;
+	  		  		  STATE = State_CollectData_2;
+	  		  		  break;
+
+	  		  	  case 0b10010111 :
+	  		  		  mode = 7;		//set goal n station #3
+	  		  		  STATE = State_Len;
+	  		  		  break;
+	  		  }
+	  		  break;
+
+	  	  case State_Len :
+	  		len = dataIn;
+	  		n = dataIn;
+	  		STATE = State_CollectData_3;
+	  		break;
+
+	  	  case State_CollectData_2 :
+	  		check += dataIn;
+	  		parameter |= (dataIn & 0xFF) << (8*n);
+	  		if (n == 0)
+	  		{
+	  			STATE = State_CheckSum;
+	  			break;
+	  		}
+	  		n -= 1;
+	  		break;
+
+	  	  case State_CollectData_3 :
+	  		n -= 1;
+	  		check += dataIn;
+	  		if (n == 0)
+	  		{
+	  			STATE = State_CheckSum;
+	  			break;
+	  		}
+	  		station[n] += dataIn;
+	  		break;
+
+	  	  case State_CheckSum :
+	  		  switch (mode)
+	  		  {
+	  		  	  case 1 :	//test command #2
+	  		  		  checksum = ~(0b10010001 + check);
+	  		  		  ACK1();
+	  		  		  break;
+
+	  		  	  case 2 : //connect MCU #1
+	  		  		  checksum = ~(0b10010010);
+	  		  		  ACK1();
+	  		  		  break;
+
+	  		  	  case 3 : //disconnect MCU #1
+	  		  		  checksum = ~(0b10010011);
+	  		  		  ACK1();
+	  		  		  break;
+
+	  		  	  case 4 : //set angular velocity #2
+	  		  		  checksum = ~(0b10010100 + check);
+	  		  		  //velocity = parameter;
+	  		  		  ACK1();
+	  		  		  break;
+
+	  		  	  case 5 : //set angular position #2
+	  		  		  checksum = ~(0b10010101 + check);
+	  		  		  //position = parameter;
+	  		  		  ACK1();
+	  		  		  break;
+
+	  		  	  case 6 : //set goal 1 station #2
+	  		  		  checksum = ~(0b10010110 + check);
+	  		  		  //station = parameter;
+	  		  		  ACK1();
+	  		  		  break;
+
+	  		  	  case 7 : //set goal n station #3
+	  		  		  checksum = ~(0b10010111 + len + check);
+	  		  		  for (uint8_t i = len - 1 ; i >= 0 ; i--)
+	  		  		  {
+	  		  			  nstation[len - i - 1] = station[i];
+	  		  		  }
+	  		  		  ACK1();
+	  		  		  break;
+
+	  		  	  case 8 : //go to station/goal position #1
+	  		  		  checksum = ~(0b10011000);
+	  		  		  ACK1();
+	  		  		  break;
+
+	  		  	  case 9 : //request current station #1
+	  		  		  checksum = ~(0b10011001);
+	  		  		  ACK1();
+	  		  		  request(9);
+	  		  		  break;
+
+	  		  	  case 10 : //request angular position #1
+	  		  		  checksum = ~(0b10011010);
+	  		  		  ACK1();
+	  		  		  request(10);
+	  		  		  break;
+
+	  		  	  case 11 : //request max angular velocity #1
+	  		  		  checksum = ~(0b10011011);
+	  		  		  ACK1();
+	  		  		  request(11);
+	  		  		  break;
+
+	  		  	  case 12 : //enable gripper #1
+	  		  		  checksum = ~(0b10011100);
+	  		  		  ACK1();
+	  		  		  break;
+
+	  		  	  case 13 : //disable gripper #1
+	  		  		  checksum = ~(0b10011101);
+	  		  		  ACK1();
+	  		  		  break;
+
+	  		  	  case 14 : //set home #1
+	  		  		  checksum = ~(0b10011110);
+	  		  		  ACK1();
+	  		  		  break;
+	  		  }
+	  }
+}
+
+void ACK1()
+{
+	static uint8_t ack1[2] = {0x58,0b01110101};
+	HAL_UART_Transmit_IT(&huart2, ack1, 2);
+}
+
+void ACK2()
+{
+	static uint8_t ack2[2] = {70,110};
+	HAL_UART_Transmit_IT(&huart2, ack2, 2);
+}
+
+void request(uint8_t mode)
+{
+	if (mode == 9)		//request current station >> #2
+	{
+		uint8_t requested[] = {0b10011001, 0b00, 0b00, 0b00};
+		requested[2] = velocity;
+		requested[3] = ~(0b10011001 + requested[2]);
+		HAL_UART_Transmit_IT(&huart2, requested, 4);
+	}
+
+	if (mode == 10)		//request angular position >> #2
+	{
+		uint8_t requested[] = {0b10011010, 0b00, 0b00, 0b00};
+		requested[1] = velocity >> 8;
+		requested[2] = velocity;
+		requested[3] = ~(0b10011010 + requested[1] + requested[2]);
+		HAL_UART_Transmit_IT(&huart2, requested, 4);
+	}
+
+	if (mode == 11)		//request max angular velocity >> #2
+	{
+		uint8_t requested[] = {0b10011011, 0b00, 0b00, 0b00};
+		requested[2] = velocity;
+		requested[3] = ~(0b10011011 + requested[2]);
+		HAL_UART_Transmit_IT(&huart2, requested, 4);
+	}
+}
 /* USER CODE END 4 */
 
 /**
