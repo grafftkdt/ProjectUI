@@ -473,7 +473,7 @@ void request(uint8_t mode)
 	if (mode == 9)		//request current station >> #2
 	{
 		uint8_t requested[] = {0b10011001, 0b00, 0b00, 0b00};
-		requested[2] = velocity;
+		//requested[2] = velocity;
 		requested[3] = ~(0b10011001 + requested[2]);
 		HAL_UART_Transmit_IT(&huart2, requested, 4);
 	}
@@ -481,8 +481,8 @@ void request(uint8_t mode)
 	if (mode == 10)		//request angular position >> #2
 	{
 		uint8_t requested[] = {0b10011010, 0b00, 0b00, 0b00};
-		requested[1] = velocity >> 8;
-		requested[2] = velocity;
+		//requested[1] = velocity >> 8;
+		//requested[2] = velocity;
 		requested[3] = ~(0b10011010 + requested[1] + requested[2]);
 		HAL_UART_Transmit_IT(&huart2, requested, 4);
 	}
@@ -490,7 +490,7 @@ void request(uint8_t mode)
 	if (mode == 11)		//request max angular velocity >> #2
 	{
 		uint8_t requested[] = {0b10011011, 0b00, 0b00, 0b00};
-		requested[2] = velocity;
+		//requested[2] = velocity;
 		requested[3] = ~(0b10011011 + requested[2]);
 		HAL_UART_Transmit_IT(&huart2, requested, 4);
 	}
