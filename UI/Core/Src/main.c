@@ -40,27 +40,33 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+I2C_HandleTypeDef hi2c1;
+
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 int16_t inputchar = -1;
 char RxDataBuffer[32] = { 0 };
-uint8_t nstation[10] = { 0 };
+uint8_t nstation[10] = {99,99,99,99,99,99,99,99,99,99};
 uint8_t test = 0;
 uint8_t error = 0;
 uint8_t connect = 1;
+float value = 0;
+//uint8_t EEdata = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
+static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
 int16_t UARTRecieveIT();
 void Communication(int16_t dataIn);
 void ACK1();
 void ACK2();
 void request(uint8_t mode);
+void end_effector();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -97,6 +103,7 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART2_UART_Init();
+  MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -162,6 +169,40 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief I2C1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2C1_Init(void)
+{
+
+  /* USER CODE BEGIN I2C1_Init 0 */
+
+  /* USER CODE END I2C1_Init 0 */
+
+  /* USER CODE BEGIN I2C1_Init 1 */
+
+  /* USER CODE END I2C1_Init 1 */
+  hi2c1.Instance = I2C1;
+  hi2c1.Init.ClockSpeed = 400000;
+  hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
+  hi2c1.Init.OwnAddress1 = 0;
+  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c1.Init.OwnAddress2 = 0;
+  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2C1_Init 2 */
+
+  /* USER CODE END I2C1_Init 2 */
+
 }
 
 /**
@@ -254,6 +295,7 @@ void Communication(int16_t dataIn)
 	static uint8_t len = 0;
 	test = 0;
 	error = 0;
+	value = 0;
 
 	static enum _StateMachine
 	{
@@ -367,12 +409,12 @@ void Communication(int16_t dataIn)
 	  	  case State_CollectData_3 :
 	  		n -= 1;
 	  		check += dataIn;
+	  		station[n] = dataIn;
 	  		if (n == 0)
 	  		{
 	  			STATE = State_CheckSum;
 	  			break;
 	  		}
-	  		station[n] += dataIn;
 	  		break;
 
 	  	  case State_CheckSum :
@@ -430,11 +472,11 @@ void Communication(int16_t dataIn)
 	  		  		  STATE = State_StartMode;
 	  		  		  if (dataIn != checksum)
 	  		  		  {
-	  		  			  error = 1;
+	  		  			  error = dataIn;
 	  		  		  }
 	  		  		  else if (connect == 1)
 	  		  		  {
-		  		  		  //velocity = parameter;
+		  		  		  value = parameter;
 	  		  			  test = 4;
 	  		  		  }
 	  		  		  break;
@@ -449,7 +491,7 @@ void Communication(int16_t dataIn)
 	  		  		  }
 	  		  		  else if (connect == 1)
 	  		  		  {
-		  		  		  //position = parameter;
+		  		  		  value = parameter/10000.0;
 	  		  			  test = 5;
 	  		  		  }
 	  		  		  break;
@@ -464,17 +506,13 @@ void Communication(int16_t dataIn)
 	  		  		  }
 	  		  		  else if (connect == 1)
 	  		  		  {
-		  		  		  //station = parameter;
+		  		  		  value = parameter;
 	  		  			  test = 6;
 	  		  		  }
 	  		  		  break;
 
 	  		  	  case 7 : //set goal n station #3
 	  		  		  checksum = ~(0b10010111 + len + check);
-	  		  		  for (uint8_t i = len - 1 ; i >= 0 ; i--)
-	  		  		  {
-	  		  			  nstation[len - i - 1] = station[i];
-	  		  		  }
 	  		  		  ACK1();
 	  		  		  STATE = State_StartMode;
 	  		  		  if (dataIn != checksum)
@@ -484,6 +522,10 @@ void Communication(int16_t dataIn)
 	  		  		  else if (connect == 1)
 	  		  		  {
 	  		  			  //blabla
+	  		  			 for (uint8_t i = len - 1 ; i >= 0 ; i--)
+						  {
+							  nstation[len - i - 1] = station[i];
+						  }
 	  		  			  test = 7;
 	  		  		  }
 	  		  		  break;
@@ -635,6 +677,11 @@ void request(uint8_t mode)
 		HAL_UART_Transmit_IT(&huart2, requested, 4);
 	}
 }
+//
+//void end_effector()
+//{
+//	HAL_I2C_Master_Transmit_IT(&hi2c1, 0x23 << 1, pData, 1);
+//}
 /* USER CODE END 4 */
 
 /**
