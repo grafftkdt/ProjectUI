@@ -48,6 +48,7 @@ char RxDataBuffer[32] = { 0 };
 uint8_t nstation[10] = { 0 };
 uint8_t test = 0;
 uint8_t error = 0;
+uint8_t connect = 1;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -248,7 +249,7 @@ void Communication(int16_t dataIn)
 	static uint8_t n = 0;
 	static uint16_t parameter = 0;
 	static uint8_t station[10] = {99,99,99,99,99,99,99,99,99,99};
-	static uint16_t checksum = 0;
+	static uint8_t checksum = 0;
 	static uint8_t check = 0;
 	static uint8_t len = 0;
 	test = 0;
@@ -385,7 +386,7 @@ void Communication(int16_t dataIn)
 	  		  		  {
 	  		  			  error = 1;
 	  		  		  }
-	  		  		  else
+	  		  		  else if (connect == 1)
 	  		  		  {
 	  		  			  //blabla
 	  		  			  test = 1;
@@ -402,7 +403,7 @@ void Communication(int16_t dataIn)
 	  		  		  }
 	  		  		  else
 	  		  		  {
-	  		  			  //blabla
+	  		  			  connect = 1;
 	  		  			  test = 2;
 	  		  		  }
 	  		  		  break;
@@ -417,7 +418,7 @@ void Communication(int16_t dataIn)
 	  		  		  }
 	  		  		  else
 	  		  		  {
-	  		  			  //STATE = State_StartMode;
+	  		  			  connect = 0;
 	  		  			  test = 3;
 	  		  		  }
 
@@ -431,7 +432,7 @@ void Communication(int16_t dataIn)
 	  		  		  {
 	  		  			  error = 1;
 	  		  		  }
-	  		  		  else
+	  		  		  else if (connect == 1)
 	  		  		  {
 		  		  		  //velocity = parameter;
 	  		  			  test = 4;
@@ -446,7 +447,7 @@ void Communication(int16_t dataIn)
 	  		  		  {
 	  		  			  error = 1;
 	  		  		  }
-	  		  		  else
+	  		  		  else if (connect == 1)
 	  		  		  {
 		  		  		  //position = parameter;
 	  		  			  test = 5;
@@ -461,7 +462,7 @@ void Communication(int16_t dataIn)
 	  		  		  {
 	  		  			  error = 1;
 	  		  		  }
-	  		  		  else
+	  		  		  else if (connect == 1)
 	  		  		  {
 		  		  		  //station = parameter;
 	  		  			  test = 6;
@@ -480,7 +481,7 @@ void Communication(int16_t dataIn)
 	  		  		  {
 	  		  			  error = 1;
 	  		  		  }
-	  		  		  else
+	  		  		  else if (connect == 1)
 	  		  		  {
 	  		  			  //blabla
 	  		  			  test = 7;
@@ -495,7 +496,7 @@ void Communication(int16_t dataIn)
 	  		  		  {
 	  		  			  error = 1;
 	  		  		  }
-	  		  		  else
+	  		  		  else if (connect == 1)
 	  		  		  {
 	  		  			  //blabla
 	  		  			  test = 8;
@@ -510,7 +511,7 @@ void Communication(int16_t dataIn)
 	  		  		  {
 	  		  			  error = 1;
 	  		  		  }
-	  		  		  else
+	  		  		  else if (connect == 1)
 	  		  		  {
 	  		  			  request(9);
 	  		  			  test = 9;
@@ -525,7 +526,7 @@ void Communication(int16_t dataIn)
 	  		  		  {
 	  		  			  error = 1;
 	  		  		  }
-	  		  		  else
+	  		  		  else if (connect == 1)
 	  		  		  {
 	  		  			  request(10);
 	  		  			  test = 10;
@@ -540,7 +541,7 @@ void Communication(int16_t dataIn)
 	  		  		  {
 	  		  			  error = 1;
 	  		  		  }
-	  		  		  else
+	  		  		  else if (connect == 1)
 	  		  		  {
 	  		  			  request(11);
 	  		  			  test = 11;
@@ -555,7 +556,7 @@ void Communication(int16_t dataIn)
 	  		  		  {
 	  		  			  error = 1;
 	  		  		  }
-	  		  		  else
+	  		  		  else if (connect == 1)
 	  		  		  {
 	  		  			  //blabla
 	  		  			  test = 12;
@@ -570,7 +571,7 @@ void Communication(int16_t dataIn)
 	  		  		  {
 	  		  			  error = 1;
 	  		  		  }
-	  		  		  else
+	  		  		  else if (connect == 1)
 	  		  		  {
 	  		  			  //blabla
 	  		  			  test = 13;
@@ -585,7 +586,7 @@ void Communication(int16_t dataIn)
 	  		  		  {
 	  		  			  error = 1;
 	  		  		  }
-	  		  		  else
+	  		  		  else if (connect == 1)
 	  		  		  {
 	  		  			  //sethome = 1;
 	  		  			  test = 14;
