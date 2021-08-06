@@ -46,6 +46,8 @@ UART_HandleTypeDef huart2;
 int16_t inputchar = -1;
 char RxDataBuffer[32] = { 0 };
 uint8_t nstation[10] = { 0 };
+uint8_t test = 0;
+uint8_t error = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -249,6 +251,8 @@ void Communication(int16_t dataIn)
 	static uint16_t checksum = 0;
 	static uint8_t check = 0;
 	static uint8_t len = 0;
+	test = 0;
+	error = 0;
 
 	static enum _StateMachine
 	{
@@ -376,34 +380,92 @@ void Communication(int16_t dataIn)
 	  		  	  case 1 :	//test command #2
 	  		  		  checksum = ~(0b10010001 + check);
 	  		  		  ACK1();
+	  		  		  STATE = State_StartMode;
+	  		  		  if (dataIn != checksum)
+	  		  		  {
+	  		  			  error = 1;
+	  		  		  }
+	  		  		  else
+	  		  		  {
+	  		  			  //blabla
+	  		  			  test = 1;
+	  		  		  }
 	  		  		  break;
 
 	  		  	  case 2 : //connect MCU #1
 	  		  		  checksum = ~(0b10010010);
 	  		  		  ACK1();
+	  		  		  STATE = State_StartMode;
+	  		  		  if (dataIn != checksum)
+	  		  		  {
+	  		  			  error = 1;
+	  		  		  }
+	  		  		  else
+	  		  		  {
+	  		  			  //blabla
+	  		  			  test = 2;
+	  		  		  }
 	  		  		  break;
 
 	  		  	  case 3 : //disconnect MCU #1
 	  		  		  checksum = ~(0b10010011);
 	  		  		  ACK1();
+	  		  		  STATE = State_StartMode;
+	  		  		  if (dataIn != checksum)
+	  		  		  {
+	  		  			  error = 1;
+	  		  		  }
+	  		  		  else
+	  		  		  {
+	  		  			  //STATE = State_StartMode;
+	  		  			  test = 3;
+	  		  		  }
+
 	  		  		  break;
 
 	  		  	  case 4 : //set angular velocity #2
 	  		  		  checksum = ~(0b10010100 + check);
-	  		  		  //velocity = parameter;
 	  		  		  ACK1();
+	  		  		  STATE = State_StartMode;
+	  		  		  if (dataIn != checksum)
+	  		  		  {
+	  		  			  error = 1;
+	  		  		  }
+	  		  		  else
+	  		  		  {
+		  		  		  //velocity = parameter;
+	  		  			  test = 4;
+	  		  		  }
 	  		  		  break;
 
 	  		  	  case 5 : //set angular position #2
 	  		  		  checksum = ~(0b10010101 + check);
-	  		  		  //position = parameter;
 	  		  		  ACK1();
+	  		  		  STATE = State_StartMode;
+	  		  		  if (dataIn != checksum)
+	  		  		  {
+	  		  			  error = 1;
+	  		  		  }
+	  		  		  else
+	  		  		  {
+		  		  		  //position = parameter;
+	  		  			  test = 5;
+	  		  		  }
 	  		  		  break;
 
 	  		  	  case 6 : //set goal 1 station #2
 	  		  		  checksum = ~(0b10010110 + check);
-	  		  		  //station = parameter;
 	  		  		  ACK1();
+	  		  		  STATE = State_StartMode;
+	  		  		  if (dataIn != checksum)
+	  		  		  {
+	  		  			  error = 1;
+	  		  		  }
+	  		  		  else
+	  		  		  {
+		  		  		  //station = parameter;
+	  		  			  test = 6;
+	  		  		  }
 	  		  		  break;
 
 	  		  	  case 7 : //set goal n station #3
@@ -413,44 +475,121 @@ void Communication(int16_t dataIn)
 	  		  			  nstation[len - i - 1] = station[i];
 	  		  		  }
 	  		  		  ACK1();
+	  		  		  STATE = State_StartMode;
+	  		  		  if (dataIn != checksum)
+	  		  		  {
+	  		  			  error = 1;
+	  		  		  }
+	  		  		  else
+	  		  		  {
+	  		  			  //blabla
+	  		  			  test = 7;
+	  		  		  }
 	  		  		  break;
 
 	  		  	  case 8 : //go to station/goal position #1
 	  		  		  checksum = ~(0b10011000);
 	  		  		  ACK1();
+	  		  		  STATE = State_StartMode;
+	  		  		  if (dataIn != checksum)
+	  		  		  {
+	  		  			  error = 1;
+	  		  		  }
+	  		  		  else
+	  		  		  {
+	  		  			  //blabla
+	  		  			  test = 8;
+	  		  		  }
 	  		  		  break;
 
 	  		  	  case 9 : //request current station #1
 	  		  		  checksum = ~(0b10011001);
 	  		  		  ACK1();
-	  		  		  request(9);
+	  		  		  STATE = State_StartMode;
+	  		  		  if (dataIn != checksum)
+	  		  		  {
+	  		  			  error = 1;
+	  		  		  }
+	  		  		  else
+	  		  		  {
+	  		  			  request(9);
+	  		  			  test = 9;
+	  		  		  }
 	  		  		  break;
 
 	  		  	  case 10 : //request angular position #1
 	  		  		  checksum = ~(0b10011010);
 	  		  		  ACK1();
-	  		  		  request(10);
+	  		  		  STATE = State_StartMode;
+	  		  		  if (dataIn != checksum)
+	  		  		  {
+	  		  			  error = 1;
+	  		  		  }
+	  		  		  else
+	  		  		  {
+	  		  			  request(10);
+	  		  			  test = 10;
+	  		  		  }
 	  		  		  break;
 
 	  		  	  case 11 : //request max angular velocity #1
 	  		  		  checksum = ~(0b10011011);
 	  		  		  ACK1();
-	  		  		  request(11);
+	  		  		  STATE = State_StartMode;
+	  		  		  if (dataIn != checksum)
+	  		  		  {
+	  		  			  error = 1;
+	  		  		  }
+	  		  		  else
+	  		  		  {
+	  		  			  request(11);
+	  		  			  test = 11;
+	  		  		  }
 	  		  		  break;
 
 	  		  	  case 12 : //enable gripper #1
 	  		  		  checksum = ~(0b10011100);
 	  		  		  ACK1();
+	  		  		  STATE = State_StartMode;
+	  		  		  if (dataIn != checksum)
+	  		  		  {
+	  		  			  error = 1;
+	  		  		  }
+	  		  		  else
+	  		  		  {
+	  		  			  //blabla
+	  		  			  test = 12;
+	  		  		  }
 	  		  		  break;
 
 	  		  	  case 13 : //disable gripper #1
 	  		  		  checksum = ~(0b10011101);
 	  		  		  ACK1();
+	  		  		  STATE = State_StartMode;
+	  		  		  if (dataIn != checksum)
+	  		  		  {
+	  		  			  error = 1;
+	  		  		  }
+	  		  		  else
+	  		  		  {
+	  		  			  //blabla
+	  		  			  test = 13;
+	  		  		  }
 	  		  		  break;
 
 	  		  	  case 14 : //set home #1
 	  		  		  checksum = ~(0b10011110);
 	  		  		  ACK1();
+	  		  		  STATE = State_StartMode;
+	  		  		  if (dataIn != checksum)
+	  		  		  {
+	  		  			  error = 1;
+	  		  		  }
+	  		  		  else
+	  		  		  {
+	  		  			  //sethome = 1;
+	  		  			  test = 14;
+	  		  		  }
 	  		  		  break;
 	  		  }
 	  }
